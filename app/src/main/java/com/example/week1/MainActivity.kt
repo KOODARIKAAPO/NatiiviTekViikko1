@@ -30,7 +30,16 @@ class MainActivity : ComponentActivity() {
 @Composable
 fun HomeScreen(modifier: Modifier = Modifier) {
 
+
     var taskList by remember { mutableStateOf(mockTasks) }
+
+  // Filtteri, null= kaikki fale= tekemätön, true= tehdyt
+    var filterDone by remember { mutableStateOf<Boolean?>(null) }
+
+    val visibleList = when (filterDone) {
+        null -> taskList
+        else -> filterByDone(taskList, filterDone!!)
+    }
 
     Column(
         modifier = modifier
@@ -44,9 +53,13 @@ fun HomeScreen(modifier: Modifier = Modifier) {
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        // Add-nappi
-        Button(
-            onClick = {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+
+            // Add
+            Button(onClick = {
                 val newTask = Task(
                     id = taskList.size + 1,
                     title = "New Task",
@@ -56,23 +69,61 @@ fun HomeScreen(modifier: Modifier = Modifier) {
                     done = false
                 )
                 taskList = addTask(taskList, newTask)
+            }) {
+                Text("Add")
             }
-        ) {
-            Text("Add Task")
+
+            // Filter
+            Button(onClick = {
+                filterDone = when (filterDone) {
+                    null -> false
+                    false -> true
+                    true -> null
+                }
+            }) {
+                Text(
+                    when (filterDone) {
+                        null -> "Filter: All"
+                        false -> "Filter: Todo"
+                        true -> "Filter: Done"
+                    }
+                )
+            }
+
+            // Sort
+            Button(onClick = {
+                taskList = sortByDueDate(taskList)
+            }) {
+                Text("Sort")
+            }
         }
 
         Spacer(modifier = Modifier.height(16.dp))
 
         // Lista
-        taskList.forEach { task ->
+        visibleList.forEach { task ->
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(vertical = 8.dp),
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
-                Text("${task.title} (done: ${task.done})")
+                // Title + dueDate + done samaan "vasempaan palstaan"
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(text = task.title)
+                    Text(
+                        text = "Due: ${task.dueDate}",
+                        style = MaterialTheme.typography.bodySmall
+                    )
+                    Text(
+                        text = "Done: ${task.done}",
+                        style = MaterialTheme.typography.bodySmall
+                    )
+                }
 
+                Spacer(modifier = Modifier.width(12.dp))
+
+                //toggle
                 Button(onClick = {
                     taskList = toggleDone(taskList, task.id)
                 }) {
